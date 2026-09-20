@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#141618">
+<title>Mando VCR</title>
+<style>
+:root{
+  --bg:#141618;
+  --plastic:#b9bbbf;
+  --plastic-d:#9b9ea3;
+  --ink:#1c1e22;
+  --key:#2b2d32;
+  --key-hi:#3d4046;
+  --key-shadow:#0e0f11;
+  --keytxt:#e6e8eb;
+  --vfd-bg:#04100e;
+  --vfd:#66f0d2;
+  --vfd-sub:#4fbfa8;
+  --rec:#d8443a;
+  --amber:#e3a23b;
+  --amber-ink:#2a1c05;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.4}
+body{display:flex;justify-content:center}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+
+.remote{width:100%;max-width:440px;min-height:100%;background:var(--plastic);display:flex;flex-direction:column;
+  padding-top:env(safe-area-inset-top,0px)}
+
+/* Pantalla fluorescente */
+.vfd{margin:14px 14px 6px;background:var(--vfd-bg);border:3px solid #55585d;border-radius:8px;padding:12px 14px 10px;
+  box-shadow:inset 0 0 18px rgba(102,240,210,.10)}
+.vfd-main{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:26px;letter-spacing:.14em;
+  color:var(--vfd);text-shadow:0 0 8px rgba(102,240,210,.55);min-height:1.3em;white-space:nowrap;overflow:hidden;text-overflow:clip}
+.vfd-sub{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px;letter-spacing:.06em;
+  color:var(--vfd-sub);min-height:1.4em;margin-top:2px}
+
+main{flex:1;padding:8px 14px 96px}
+section[hidden]{display:none}
+
+/* Teclas */
+.pad{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+.key{appearance:none;border:0;border-radius:12px;background:var(--key);color:var(--keytxt);
+  padding:12px 4px 9px;min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  font-size:12px;box-shadow:0 3px 0 var(--key-shadow);cursor:pointer}
+.key:active{transform:translateY(2px);box-shadow:0 1px 0 var(--key-shadow);background:var(--key-hi)}
+.key .ico{height:24px;display:flex;align-items:center;font-weight:700;font-size:16px;letter-spacing:.02em}
+.key svg{width:24px;height:24px;fill:currentColor}
+.key.span2{grid-column:span 2}
+.key.empty{opacity:.5}
+.key.rec svg{color:var(--rec)}
+.key.power{background:#3a1f1d}
+.key.power svg{color:#ff8a80}
+.hint{margin:14px 2px 0;font-size:14px;color:#33363b}
+
+/* Formularios */
+.panel{background:#c9cbcf;border-radius:12px;padding:14px;margin-top:12px}
+.panel h2{font-size:17px;margin:0 0 4px}
+.panel p{margin:0 0 10px;font-size:14px;color:#2f3237}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.field{display:flex;flex-direction:column;gap:4px;font-size:13px;color:#2f3237}
+.field.full{grid-column:1/-1}
+.field input,.field select,.field textarea{min-height:44px;border:1px solid #7d8087;border-radius:8px;background:#eceef0;padding:8px 10px;color:var(--ink)}
+.field textarea{min-height:96px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;resize:vertical}
+.btn{appearance:none;border:0;border-radius:10px;min-height:48px;padding:0 16px;background:var(--key);color:var(--keytxt);
+  font-weight:600;cursor:pointer;box-shadow:0 3px 0 var(--key-shadow)}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--key-shadow)}
+.btn.primary{background:var(--amber);color:var(--amber-ink);box-shadow:0 3px 0 #8a5f14}
+.btn.big{min-height:76px;font-size:20px;width:100%}
+.btn.small{min-height:36px;font-size:13px;padding:0 12px}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px #7d8087}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+.btns .btn{flex:1}
+.stat{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;margin:8px 0}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #a9acb1;font-size:14px}
+.list li:last-child{border-bottom:0}
+.list code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:#2f3237}
+
+/* Navegación inferior */
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;display:grid;grid-template-columns:repeat(3,1fr);
+  background:var(--ink);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));gap:6px}
+nav button{appearance:none;border:0;background:transparent;color:#a7abb1;min-height:48px;border-radius:10px;font-weight:600;cursor:pointer}
+nav button[aria-selected="true"]{background:#2f3238;color:var(--vfd)}
+
+@media (prefers-reduced-motion:no-preference){
+  .key,.btn{transition:transform .06s}
+}
+</style>
+</head>
+<body>
+<div class="remote">
+
+  <div class="vfd" role="status" aria-live="polite">
+    <div class="vfd-main" id="vfdMain">--:--</div>
+    <div class="vfd-sub" id="vfdSub">Iniciando</div>
+  </div>
+
+  <main>
+    <!-- MANDO -->
+    <section id="tab-mando">
+      <div class="pad" id="pad"></div>
+      <p class="hint" id="padHint"></p>
+    </section>
+
+    <!-- BUSCAR -->
+    <section id="tab-buscar" hidden>
+      <div class="panel">
+        <h2>Buscar el código de tu vídeo</h2>
+        <p>Deja el vídeo en standby y apunta el móvil a unos 1–2 m. La app prueba códigos uno tras otro. Cuando el vídeo reaccione (luz, pantalla o motor), pulsa <b>Ha respondido</b>.</p>
+
+        <div class="row">
+          <label class="field full">Protocolo
+            <select id="proto">
+              <option value="nec">NEC (el más común)</option>
+              <option value="sony">Sony SIRC 12 bits</option>
+              <option value="rc5">Philips RC-5</option>
+            </select>
+          </label>
+          <label class="field">Dirección desde<input id="a0" type="number" inputmode="numeric" min="0" value="0"></label>
+          <label class="field">Dirección hasta<input id="a1" type="number" inputmode="numeric" min="0" value="255"></label>
+          <label class="field">Comando desde<input id="c0" type="number" inputmode="numeric" min="0" value="0"></label>
+          <label class="field">Comando hasta<input id="c1" type="number" inputmode="numeric" min="0" value="255"></label>
+          <label class="field full">Pausa entre códigos (ms)<input id="delay" type="number" inputmode="numeric" min="150" step="50" value="500"></label>
+        </div>
+        <div class="stat" id="sweepEstimate"></div>
+
+        <div id="sweepIdle" class="btns">
+          <button class="btn primary big" id="btnStart">Empezar a probar</button>
+        </div>
+
+        <div id="sweepRun" hidden>
+          <button class="btn primary big" id="btnFound">Ha respondido</button>
+          <div class="btns" style="margin-top:10px"><button class="btn ghost" id="btnPauseSweep">Pausar</button></div>
+        </div>
+
+        <div id="sweepPaused" hidden>
+          <p><b>Vuelvo 2 códigos atrás</b>, porque el vídeo tarda un instante en reaccionar. Pulsa Reenviar y ▶ hasta ver cuál lo activa.</p>
+          <div class="btns">
+            <button class="btn" id="btnPrev" aria-label="Código anterior">◀ Anterior</button>
+            <button class="btn" id="btnResend">Reenviar</button>
+            <button class="btn" id="btnNext" aria-label="Código siguiente">Siguiente ▶</button>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <label class="field full">Guardar este código en el botón
+              <select id="assignTarget"></select>
+            </label>
+          </div>
+          <div class="btns">
+            <button class="btn primary" id="btnAssign">Guardar código</button>
+            <button class="btn ghost" id="btnResume">Seguir probando</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CÓDIGOS -->
+    <section id="tab-codigos" hidden>
+      <div class="panel">
+        <h2>Códigos guardados</h2>
+        <ul class="list" id="codeList"></ul>
+        <div class="btns" style="margin-top:10px"><button class="btn ghost small" id="btnClear">Borrar todos</button></div>
+      </div>
+
+      <div class="panel">
+        <h2>Probar el perfil RC-5</h2>
+        <p>Muchos vídeos europeos usan las órdenes estándar de Philips RC-5 (dirección 5). No está garantizado para tu modelo. Cárgalo y pulsa Encender.</p>
+        <div class="btns"><button class="btn" id="btnPresetRc5">Cargar perfil RC-5</button></div>
+      </div>
+
+      <div class="panel">
+        <h2>Pegar un código Pronto</h2>
+        <p>Los ficheros de RemoteCentral usan este formato hexadecimal, que empieza por 0000.</p>
+        <div class="row">
+          <label class="field full">Código Pronto<textarea id="prontoText" spellcheck="false" placeholder="0000 006D 0022 0000 ..."></textarea></label>
+          <label class="field full">Botón
+            <select id="prontoTarget"></select>
+          </label>
+        </div>
+        <div class="btns">
+          <button class="btn" id="btnProntoTest">Probar</button>
+          <button class="btn primary" id="btnProntoSave">Guardar</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav role="tablist" aria-label="Secciones">
+    <button role="tab" aria-selected="true" data-tab="mando">Mando</button>
+    <button role="tab" aria-selected="false" data-tab="buscar">Buscar</button>
+    <button role="tab" aria-selected="false" data-tab="codigos">Códigos</button>
+  </nav>
+</div>
+
+<script src="ir.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "mando-vcr",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mando IR para vídeo VHS (Aiwa HV-FX5950) usando el emisor infrarrojo del móvil",
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/core": "^6.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  }
+}
