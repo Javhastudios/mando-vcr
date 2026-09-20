@@ -38,7 +38,8 @@ window.addEventListener('error', function (e) {
     { id: 'pause', label: 'Pausa',      icon: 'pause' },
     { id: 'rec',   label: 'Grabar',     icon: 'rec' },
     { id: 'chdn',  label: 'Canal −',    text: 'CH −' },
-    { id: 'chup',  label: 'Canal +',    text: 'CH +' }
+    { id: 'chup',  label: 'Canal +',    text: 'CH +' },
+    { id: 'lock',  label: 'Bloqueo',    text: 'LOCK', span: 4 }
   ];
   function labelOf(id) { return BUTTONS.filter(function (b) { return b.id === id; })[0].label; }
 
@@ -61,7 +62,7 @@ window.addEventListener('error', function (e) {
   function describe(d) {
     if (d.type === 'raw') return 'Pronto ' + Math.round(d.freq / 1000) + ' kHz';
     var name = { nec: 'NEC', sony: 'Sony', rc5: 'RC-5' }[d.type];
-    return name + '  dir ' + d.a + '  cmd ' + d.c;
+    return name + '  dir ' + d.a + '  cmd ' + d.c + (d.hold ? '  · ' + d.hold + ' s' : '');
   }
 
   /* ---------- Envío ---------- */
@@ -69,6 +70,22 @@ window.addEventListener('error', function (e) {
     var built = IRCodec.build(d);
     if (!IR) return Promise.resolve();      // modo demo en navegador
     return IR.transmit({ frequency: built.freq, pattern: built.pattern });
+  }
+  /* Pulsación larga: trama completa y después repeticiones cada ~108 ms */
+  var held = 0;
+  function sendHeld(d, secs) {
+    var id = ++held;
+    var end = Date.now() + secs * 1000;
+    return send(d).catch(fail).then(function () {
+      return new Promise(function (resolve) {
+        (function tick() {
+          if (id !== held || Date.now() >= end) { resolve(); return; }
+          var r = IRCodec.repeatFrame(d);
+          var p = IR ? IR.transmit({ frequency: r.freq, pattern: r.pattern }) : Promise.resolve();
+          p.catch(fail).then(function () { setTimeout(tick, 108); });
+        })();
+      });
+    }).then(function () { if (id === held) show('--:--', 'Envío terminado'); });
   }
   function fail(err) {
     show('ERROR', (err && (err.message || err)) || 'No se pudo enviar');
@@ -80,7 +97,7 @@ window.addEventListener('error', function (e) {
     pad.innerHTML = '';
     BUTTONS.forEach(function (b) {
       var el = document.createElement('button');
-      el.className = 'key' + (b.span === 2 ? ' span2' : '') + (b.id === 'rec' ? ' rec' : '') +
+      el.className = 'key' + (b.span === 2 ? ' span2' : b.span === 4 ? ' span4' : '') + (b.id === 'rec' ? ' rec' : '') +
         (b.id === 'power' ? ' power' : '') + (state.codes[b.id] ? '' : ' empty');
       el.setAttribute('aria-label', b.label);
       el.innerHTML = '<span class="ico">' + (b.icon ? ICONS[b.icon] : b.text) + '</span><span>' + b.label + '</span>';
@@ -97,12 +114,12 @@ window.addEventListener('error', function (e) {
     if (navigator.vibrate) navigator.vibrate(15);
     if (!d) { show('SIN CÓDIGO', 'Asigna ' + labelOf(id) + ' en Buscar o Códigos'); return; }
     show(labelOf(id).toUpperCase(), describe(d));
-    send(d).catch(fail);
+    if (d.hold) sendHeld(d, d.hold); else send(d).catch(fail);
   }
 
   /* ---------- Selectores de botón ---------- */
   function fillTargets() {
-    ['#assignTarget', '#prontoTarget'].forEach(function (sel) {
+    ['#assignTarget', '#prontoTarget', '#manTarget'].forEach(function (sel) {
       var el = $(sel), keep = el.value;
       el.innerHTML = BUTTONS.map(function (b) { return '<option value="' + b.id + '">' + b.label + '</option>'; }).join('');
       if (keep) el.value = keep;
@@ -251,6 +268,39 @@ window.addEventListener('error', function (e) {
     show('GUARDADO', labelOf(target) + ' = Pronto');
   }
 
+  /* ---------- Envío manual ---------- */
+  function parseNum(s) {
+    s = String(s).trim();
+    var v = /^0x/i.test(s) ? parseInt(s, 16) : parseInt(s, 10);
+    return isNaN(v) ? null : v;
+  }
+  function readManual() {
+    var proto = $('#manProto').value;
+    var a = parseNum($('#manA').value), c = parseNum($('#manC').value);
+    var maxA = proto === 'nec' ? 65535 : 31, maxC = proto === 'nec' ? 255 : 127;
+    if (a === null || c === null || a < 0 || c < 0 || a > maxA || c > maxC) {
+      show('ERROR', 'Valores fuera de rango (dir 0-' + maxA + ', cmd 0-' + maxC + ')');
+      return null;
+    }
+    var hold = Math.min(15, Math.max(0, parseInt($('#manHold').value, 10) || 0));
+    var d = { type: proto, a: a, c: c };
+    if (hold > 0) d.hold = hold;
+    return d;
+  }
+  function manualSend() {
+    var d = readManual(); if (!d) return;
+    show('ENVIANDO', describe(d));
+    if (d.hold) sendHeld(d, d.hold); else send(d).catch(fail);
+  }
+  function manualStop() { held++; show('--:--', 'Parado'); }
+  function manualSave() {
+    var d = readManual(); if (!d) return;
+    var target = $('#manTarget').value;
+    state.codes[target] = d;
+    persist(); renderPad(); renderList();
+    show('GUARDADO', labelOf(target) + ' = ' + describe(d));
+  }
+
   /* ---------- Pestañas ---------- */
   function selectTab(name) {
     $$('nav button').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === name)); });
@@ -274,6 +324,9 @@ window.addEventListener('error', function (e) {
   $('#btnClear').addEventListener('click', function () {
     if (confirm('¿Borrar todos los códigos guardados?')) { state.codes = {}; persist(); renderPad(); renderList(); show('--:--', 'Códigos borrados'); }
   });
+  $('#btnManSend').addEventListener('click', manualSend);
+  $('#btnManStop').addEventListener('click', manualStop);
+  $('#btnManSave').addEventListener('click', manualSave);
   $('#btnPresetRc5').addEventListener('click', presetRc5);
   $('#btnProntoTest').addEventListener('click', prontoTest);
   $('#btnProntoSave').addEventListener('click', prontoSave);

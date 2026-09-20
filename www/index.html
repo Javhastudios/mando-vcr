@@ -52,6 +52,7 @@ section[hidden]{display:none}
 .key .ico{height:24px;display:flex;align-items:center;font-weight:700;font-size:16px;letter-spacing:.02em}
 .key svg{width:24px;height:24px;fill:currentColor}
 .key.span2{grid-column:span 2}
+.key.span4{grid-column:span 4}
 .key.empty{opacity:.5}
 .key.rec svg{color:var(--rec)}
 .key.power{background:#3a1f1d}
@@ -165,6 +166,33 @@ nav button[aria-selected="true"]{background:#2f3238;color:var(--vfd)}
         <h2>Códigos guardados</h2>
         <ul class="list" id="codeList"></ul>
         <div class="btns" style="margin-top:10px"><button class="btn ghost small" id="btnClear">Borrar todos</button></div>
+      </div>
+
+      <div class="panel">
+        <h2>Enviar un código a mano</h2>
+        <p>Dirección y comando en decimal o en hexadecimal con 0x (por ejemplo 0x5E). Con «Mantener» en 5, el código se repite 5 segundos, como una pulsación larga.</p>
+        <div class="row">
+          <label class="field full">Protocolo
+            <select id="manProto">
+              <option value="nec">NEC</option>
+              <option value="sony">Sony SIRC 12 bits</option>
+              <option value="rc5">Philips RC-5</option>
+            </select>
+          </label>
+          <label class="field">Dirección<input id="manA" type="text" value="0x02" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+          <label class="field">Comando<input id="manC" type="text" value="0x5E" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+          <label class="field full">Mantener (segundos, 0 = una sola vez)<input id="manHold" type="number" inputmode="numeric" min="0" max="15" value="5"></label>
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="btnManSend">Enviar</button>
+          <button class="btn ghost" id="btnManStop">Parar</button>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <label class="field full">Guardar en el botón
+            <select id="manTarget"></select>
+          </label>
+        </div>
+        <div class="btns"><button class="btn" id="btnManSave">Guardar</button></div>
       </div>
 
       <div class="panel">

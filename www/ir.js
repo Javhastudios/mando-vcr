@@ -74,7 +74,15 @@
     throw new Error('Protocolo desconocido: ' + d.type);
   }
 
-  var api = { nec: nec, sony: sony, rc5: rc5, pronto: pronto, build: build };
+  // Trama que envía un mando real mientras se mantiene pulsada la tecla
+  function repeatFrame(d) {
+    if (d.type === 'nec') return { freq: 38000, pattern: [9000, 2250, 560] };   // código de repetición NEC
+    if (d.type === 'sony') return sony(d.a, d.c);
+    if (d.type === 'rc5') return rc5(d.a, d.c, rc5Toggle ^ 1);                   // mismo bit toggle que la primera trama
+    return { freq: d.freq, pattern: d.pattern };
+  }
+
+  var api = { nec: nec, sony: sony, rc5: rc5, pronto: pronto, build: build, repeatFrame: repeatFrame };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.IRCodec = api;
 })(typeof self !== 'undefined' ? self : this);
