@@ -1,3 +1,7 @@
+window.addEventListener('error', function (e) {
+  var el = document.getElementById('vfdSub');
+  if (el) el.textContent = 'Error: ' + e.message;
+});
 (function () {
   'use strict';
 
@@ -5,8 +9,13 @@
   var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
 
   /* ---------- Plugin nativo ---------- */
-  var native = !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
-  var IR = native ? Capacitor.registerPlugin('Ir') : null;
+  var cap = window.Capacitor;
+  var native = !!(cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform());
+  var IR = null;
+  try {
+    if (cap && cap.Plugins && cap.Plugins.Ir) IR = cap.Plugins.Ir;
+    else if (cap && typeof cap.registerPlugin === 'function') IR = cap.registerPlugin('Ir');
+  } catch (e) { IR = null; }
 
   /* ---------- Botones ---------- */
   var ICONS = {
@@ -276,9 +285,17 @@
   sweepView('idle');
 
   if (IR) {
-    IR.hasEmitter().then(function (r) {
-      show('--:--', r.available ? 'Listo. Apunta al vídeo.' : 'Este móvil no tiene emisor IR');
-    }).catch(function () { show('--:--', 'No se pudo comprobar el emisor IR'); });
+    try {
+      IR.hasEmitter().then(function (r) {
+        show('--:--', r && r.available ? 'Listo. Apunta al vídeo.' : 'Este móvil no tiene emisor IR');
+      }).catch(function (err) {
+        show('--:--', 'Error IR: ' + ((err && err.message) || err));
+      });
+    } catch (e) {
+      show('--:--', 'Error IR: ' + e.message);
+    }
+  } else if (native) {
+    show('--:--', 'Plugin IR no encontrado en la app');
   } else {
     show('--:--', 'Modo demo: aquí no se emite IR');
   }
