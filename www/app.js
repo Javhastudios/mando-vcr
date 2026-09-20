@@ -62,7 +62,7 @@ window.addEventListener('error', function (e) {
   function describe(d) {
     if (d.type === 'raw') return 'Pronto ' + Math.round(d.freq / 1000) + ' kHz';
     var name = { nec: 'NEC', sony: 'Sony', rc5: 'RC-5' }[d.type];
-    return name + '  dir ' + d.a + '  cmd ' + d.c + (d.hold ? '  · ' + d.hold + ' s' : '');
+    return name + '  dir ' + d.a + '  cmd ' + d.c + (d.frames ? '  ×' + d.frames : '') + (d.hold ? '  · ' + d.hold + ' s' : '');
   }
 
   /* ---------- Envío ---------- */
@@ -127,7 +127,7 @@ window.addEventListener('error', function (e) {
   }
 
   /* ---------- Búsqueda ---------- */
-  var LIMITS = { nec: { a: 255, c: 255 }, sony: { a: 31, c: 127 }, rc5: { a: 31, c: 127 } };
+  var LIMITS = { nec: { a: 65535, c: 255 }, sony: { a: 31, c: 127 }, rc5: { a: 31, c: 127 } };
   var sw = { run: 0, running: false, i: 0, n: 0, p: null };
 
   function num(sel, min, max) {
@@ -141,11 +141,13 @@ window.addEventListener('error', function (e) {
     var c0 = num('#c0', 0, lim.c), c1 = num('#c1', 0, lim.c);
     if (a1 < a0) { var t = a0; a0 = a1; a1 = t; }
     if (c1 < c0) { var u = c0; c0 = c1; c1 = u; }
-    return { proto: proto, a0: a0, a1: a1, c0: c0, c1: c1, delay: num('#delay', 150, 5000) };
+    return { proto: proto, a0: a0, a1: a1, c0: c0, c1: c1, delay: num('#delay', 150, 5000), frames: num('#frames', 1, 8) };
   }
   function itemAt(i) {
     var nc = sw.p.c1 - sw.p.c0 + 1;
-    return { type: sw.p.proto, a: sw.p.a0 + Math.floor(i / nc), c: sw.p.c0 + (i % nc) };
+    var d = { type: sw.p.proto, a: sw.p.a0 + Math.floor(i / nc), c: sw.p.c0 + (i % nc) };
+    if (sw.p.frames > 1) d.frames = sw.p.frames;
+    return d;
   }
   function updateEstimate() {
     var p = readParams();
@@ -158,7 +160,7 @@ window.addEventListener('error', function (e) {
     var lim = LIMITS[$('#proto').value];
     $('#a0').max = $('#a1').max = lim.a;
     $('#c0').max = $('#c1').max = lim.c;
-    $('#a0').value = 0; $('#a1').value = lim.a;
+    $('#a0').value = 0; $('#a1').value = $('#proto').value === 'nec' ? 255 : lim.a;
     $('#c0').value = 0; $('#c1').value = lim.c;
     updateEstimate();
   }
@@ -245,6 +247,11 @@ window.addEventListener('error', function (e) {
       ul.appendChild(li);
     });
   }
+  function presetAiwa() {
+    state.codes.power = { type: 'nec', a: 0x7B80, c: 0x13, frames: 4 };
+    persist(); renderPad(); renderList();
+    show('AIWA', 'Encender cargado. Pruébalo.');
+  }
   function presetRc5() {
     var map = { power: 12, rew: 50, play: 53, ff: 52, stop: 54, pause: 48, rec: 55, chup: 32, chdn: 33 };
     Object.keys(map).forEach(function (k) { state.codes[k] = { type: 'rc5', a: 5, c: map[k] }; });
@@ -283,7 +290,9 @@ window.addEventListener('error', function (e) {
       return null;
     }
     var hold = Math.min(15, Math.max(0, parseInt($('#manHold').value, 10) || 0));
+    var frames = Math.min(8, Math.max(1, parseInt($('#manFrames').value, 10) || 1));
     var d = { type: proto, a: a, c: c };
+    if (frames > 1) d.frames = frames;
     if (hold > 0) d.hold = hold;
     return d;
   }
@@ -327,6 +336,7 @@ window.addEventListener('error', function (e) {
   $('#btnManSend').addEventListener('click', manualSend);
   $('#btnManStop').addEventListener('click', manualStop);
   $('#btnManSave').addEventListener('click', manualSave);
+  $('#btnPresetAiwa').addEventListener('click', presetAiwa);
   $('#btnPresetRc5').addEventListener('click', presetRc5);
   $('#btnProntoTest').addEventListener('click', prontoTest);
   $('#btnProntoSave').addEventListener('click', prontoSave);

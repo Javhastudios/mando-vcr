@@ -66,12 +66,22 @@
     };
   }
 
+  // Repite la trama completa n veces, con 40 ms entre tramas (como hace el mando original)
+  function repeatFrames(r, n) {
+    if (!n || n < 2) return r;
+    var out = r.pattern.slice();
+    for (var i = 1; i < n; i++) out = out.concat([40000], r.pattern);
+    return { freq: r.freq, pattern: out };
+  }
+
   function build(d) {
-    if (d.type === 'nec') return nec(d.a, d.c);
-    if (d.type === 'sony') return sony(d.a, d.c);
-    if (d.type === 'rc5') { var r = rc5(d.a, d.c, rc5Toggle); rc5Toggle ^= 1; return r; }
-    if (d.type === 'raw') return { freq: d.freq, pattern: d.pattern };
-    throw new Error('Protocolo desconocido: ' + d.type);
+    var r;
+    if (d.type === 'nec') r = nec(d.a, d.c);
+    else if (d.type === 'sony') r = sony(d.a, d.c);
+    else if (d.type === 'rc5') { r = rc5(d.a, d.c, rc5Toggle); rc5Toggle ^= 1; }
+    else if (d.type === 'raw') r = { freq: d.freq, pattern: d.pattern };
+    else throw new Error('Protocolo desconocido: ' + d.type);
+    return repeatFrames(r, d.frames);
   }
 
   // Trama que envía un mando real mientras se mantiene pulsada la tecla

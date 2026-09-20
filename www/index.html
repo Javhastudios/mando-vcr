@@ -127,7 +127,8 @@ nav button[aria-selected="true"]{background:#2f3238;color:var(--vfd)}
           <label class="field">Dirección hasta<input id="a1" type="number" inputmode="numeric" min="0" value="255"></label>
           <label class="field">Comando desde<input id="c0" type="number" inputmode="numeric" min="0" value="0"></label>
           <label class="field">Comando hasta<input id="c1" type="number" inputmode="numeric" min="0" value="255"></label>
-          <label class="field full">Pausa entre códigos (ms)<input id="delay" type="number" inputmode="numeric" min="150" step="50" value="500"></label>
+          <label class="field">Pausa entre códigos (ms)<input id="delay" type="number" inputmode="numeric" min="150" step="50" value="500"></label>
+          <label class="field">Tramas por código<input id="frames" type="number" inputmode="numeric" min="1" max="8" value="1"></label>
         </div>
         <div class="stat" id="sweepEstimate"></div>
 
@@ -170,7 +171,7 @@ nav button[aria-selected="true"]{background:#2f3238;color:var(--vfd)}
 
       <div class="panel">
         <h2>Enviar un código a mano</h2>
-        <p>Dirección y comando en decimal o en hexadecimal con 0x (por ejemplo 0x5E). Con «Mantener» en 5, el código se repite 5 segundos, como una pulsación larga.</p>
+        <p>Dirección y comando en decimal o en hexadecimal con 0x. Vienen puestos los del vídeo Aiwa que salen del archivo CCF (Encender). «Tramas» son las veces que se repite la señal completa; el mando original manda 4. Con «Mantener» en 5, se repite 5 segundos, como una pulsación larga.</p>
         <div class="row">
           <label class="field full">Protocolo
             <select id="manProto">
@@ -179,9 +180,10 @@ nav button[aria-selected="true"]{background:#2f3238;color:var(--vfd)}
               <option value="rc5">Philips RC-5</option>
             </select>
           </label>
-          <label class="field">Dirección<input id="manA" type="text" value="0x02" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
-          <label class="field">Comando<input id="manC" type="text" value="0x5E" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
-          <label class="field full">Mantener (segundos, 0 = una sola vez)<input id="manHold" type="number" inputmode="numeric" min="0" max="15" value="5"></label>
+          <label class="field">Dirección<input id="manA" type="text" value="0x7B80" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+          <label class="field">Comando<input id="manC" type="text" value="0x13" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+          <label class="field">Tramas<input id="manFrames" type="number" inputmode="numeric" min="1" max="8" value="4"></label>
+          <label class="field">Mantener (s, 0 = una vez)<input id="manHold" type="number" inputmode="numeric" min="0" max="15" value="0"></label>
         </div>
         <div class="btns">
           <button class="btn primary" id="btnManSend">Enviar</button>
@@ -193,6 +195,12 @@ nav button[aria-selected="true"]{background:#2f3238;color:var(--vfd)}
           </label>
         </div>
         <div class="btns"><button class="btn" id="btnManSave">Guardar</button></div>
+      </div>
+
+      <div class="panel">
+        <h2>Perfil Aiwa (del archivo CCF)</h2>
+        <p>Carga el botón Encender con el código NEC que aparece para el vídeo en el archivo de RemoteCentral (dirección 0x7B80, comando 0x13, 4 tramas).</p>
+        <div class="btns"><button class="btn" id="btnPresetAiwa">Cargar Encender del Aiwa</button></div>
       </div>
 
       <div class="panel">
